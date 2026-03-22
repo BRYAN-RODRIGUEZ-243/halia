@@ -5,19 +5,17 @@ services:
   postgres:
     image: postgres:16-alpine
     container_name: halia-postgres
-    restart: unless-stopped
+    restart: always
     environment:
-      POSTGRES_USER: halia
-      POSTGRES_PASSWORD: halia_password_2024
-      POSTGRES_DB: halia
+      POSTGRES_USER: ${POSTGRES_USER:-halia}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB:-halia}
     volumes:
       - postgres_data:/var/lib/postgresql/data
-    ports:
-      - "5432:5432"
     networks:
       - halia-network
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U halia"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-halia}"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -28,30 +26,30 @@ services:
       context: .
       dockerfile: Dockerfile
     container_name: halia-app
-    restart: unless-stopped
+    restart: always
     depends_on:
       postgres:
         condition: service_healthy
     environment:
-      # Database
-      DATABASE_URL: postgresql://halia:halia_password_2024@postgres:5432/halia
+      # Database (se construye automáticamente desde las variables de PostgreSQL)
+      DATABASE_URL: postgresql://${POSTGRES_USER:-halia}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-halia}
       
-      # Traccar API (cambiar por tus credenciales)
-      TRACCAR_URL: https://prueba-traccar.b4blvy.easypanel.host
-      TRACCAR_USER: bjrodriguez530@gmail.com
-      TRACCAR_PASS: admin
+      # Traccar API
+      TRACCAR_URL: ${TRACCAR_URL}
+      TRACCAR_USER: ${TRACCAR_USER}
+      TRACCAR_PASS: ${TRACCAR_PASS}
       
-      # JWT Secret (cambiar en producción)
-      JWT_SECRET: halia_jwt_secret_key_2024_change_in_production
-      JWT_EXPIRES_IN: 8h
+      # JWT Secret
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-8h}
       
-      # App URL
-      NEXT_PUBLIC_APP_URL: http://localhost:3000
+      # App URL (cambiar por tu dominio en producción)
+      NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL:-http://localhost:3000}
       
       # Node environment
       NODE_ENV: production
     ports:
-      - "3000:3000"
+      - "${APP_PORT:-3000}:3000"
     networks:
       - halia-network
     volumes:

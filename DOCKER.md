@@ -1,278 +1,457 @@
-# 🐳 Guía de Docker para HALIA
+# 🐳 Guía de Docker para HALIA - Producción
 
 ## Requisitos Previos
 
-- Docker Desktop instalado ([Descargar aquí](https://www.docker.com/products/docker-desktop))
-- Docker Compose (incluido en Docker Desktop)
+- Docker y Docker Compose instalados en el servidor
+- Acceso SSH al servidor de producción
+- Dominio configurado (opcional pero recomendado)
 
-## 🚀 Opción 1: Docker Compose (Recomendado)
+---
 
-La forma más fácil de ejecutar HALIA con PostgreSQL incluido.
+## 🚀 Despliegue en Producción
 
-### Configuración Rápida
+### Paso 1: Preparar el Servidor
 
-1. **Editar variables de entorno** (opcional)
-   
-   Abre `docker-compose.yml` y actualiza:
-   ```yaml
-   environment:
-     TRACCAR_URL: https://tu-servidor-traccar.com
-     TRACCAR_USER: tu_email@example.com
-     TRACCAR_PASS: tu_contraseña
-     JWT_SECRET: genera_uno_aleatorio_aqui
-   ```
+```bash
+# Conectar al servidor
+ssh usuario@tu-servidor.com
 
-2. **Construir y ejecutar**
-   ```bash
-   docker-compose up -d
-   ```
+# Instalar Docker (Ubuntu/Debian)
+curl -fsSL https://get.docker.com -o get-docker.sh
+sudo sh get-docker.sh
 
-3. **Ver logs**
-   ```bash
-   docker-compose logs -f app
-   ```
+# Instalar Docker Compose
+sudo apt-get update
+sudo apt-get install docker-compose-plugin
 
-4. **Acceder a la aplicación**
-   
-   Abre tu navegador en: http://localhost:3000
+# Verificar instalación
+docker --version
+docker compose version
+```
 
-### Comandos Útiles
+### Paso 2: Clonar el Repositorio
+
+```bash
+# Clonar desde GitHub
+git clone https://github.com/BRYAN-RODRIGUEZ-243/halia.git
+cd halia
+```
+
+### Paso 3: Configurar Variables de Entorno
+
+```bash
+# Copiar el archivo de ejemplo
+cp .env.production.example .env.production
+
+# Editar con nano o vim
+nano .env.production
+```
+
+**Configuración de ejemplo:**
+
+```env
+# PostgreSQL Database
+POSTGRES_USER=halia
+POSTGRES_PASSWORD=P@ssw0rd_Super_Segur0_2024_XyZ
+POSTGRES_DB=halia
+
+# Traccar GPS Server
+TRACCAR_URL=https://prueba-traccar.b4blvy.easypanel.host
+TRACCAR_USER=bjrodriguez530@gmail.com
+TRACCAR_PASS=admin
+
+# JWT Authentication (genera uno aleatorio)
+JWT_SECRET=bA9nar9UGrMEj4RynPZgFnptsDiMAiNY46a7aM+cA+E=
+JWT_EXPIRES_IN=8h
+
+# Application URL (tu dominio)
+NEXT_PUBLIC_APP_URL=https://halia.tudominio.com
+APP_PORT=3000
+```
+
+### Paso 4: Generar JWT Secret Seguro
+
+```bash
+# Opción 1: Con OpenSSL
+openssl rand -base64 32
+
+# Opción 2: Con Node.js
+node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"
+
+# Copia el resultado y pégalo en JWT_SECRET
+```
+
+### Paso 5: Construir y Ejecutar
+
+```bash
+# Construir imágenes (primera vez o después de cambios)
+docker compose --env-file .env.production build
+
+# Iniciar servicios
+docker compose --env-file .env.production up -d
+
+# Ver logs en tiempo real
+docker compose logs -f app
+```
+
+### Paso 6: Verificar Deployment
 
 ```bash
 # Ver servicios corriendo
-docker-compose ps
+docker compose ps
 
-# Detener servicios
-docker-compose down
-
-# Detener y eliminar volúmenes (borra la base de datos)
-docker-compose down -v
-
-# Reconstruir después de cambios en código
-docker-compose up -d --build
+# Verificar que la app esté lista
+curl http://localhost:3000
 
 # Ver logs de PostgreSQL
-docker-compose logs -f postgres
+docker compose logs postgres
+```
+
+---
+
+## 🌐 Configurar Nginx como Reverse Proxy (Recomendado)
+
+### Instalar Nginx
+
+```bash
+sudo apt update
+sudo apt install nginx
+```
+
+### Configurar dominio
+
+Crea `/etc/nginx/sites-available/halia`:
+
+```nginx
+server {
+    listen 80;
+    server_name halia.tudominio.com;
+
+    location / {
+        proxy_pass http://localhost:3000;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_cache_bypass $http_upgrade;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+}
+```
+
+### Activar configuración
+
+```bash
+sudo ln -s /etc/nginx/sites-available/halia /etc/nginx/sites-enabled/
+sudo nginx -t
+sudo systemctl restart nginx
+```
+
+### Instalar SSL con Let's Encrypt
+
+```bash
+sudo apt install certbot python3-certbot-nginx
+sudo certbot --nginx -d halia.tudominio.com
+```
+
+---
+
+## 🔄 Actualizar la Aplicación
+
+Cuando hagas cambios en GitHub:
+
+```bash
+# En el servidor
+cd halia
+
+# Descargar últimos cambios
+git pull
+
+# Reconstruir imagen
+docker compose --env-file .env.production build
+
+# Reiniciar servicios
+docker compose --env-file .env.production up -d
+
+# Ver logs
+docker compose logs -f app
+```
+
+---
+
+## 📊 Comandos Útiles en Producción
+
+### Estado y Monitoreo
+
+```bash
+# Ver servicios corriendo
+docker compose ps
+
+# Ver uso de recursos
+docker stats
+
+# Ver logs en tiempo real
+docker compose logs -f
+
+# Ver últimas 100 líneas de logs
+docker compose logs --tail=100 app
+
+# Ver logs de errores
+docker compose logs app | grep ERROR
+```
+
+### Gestión de Contenedores
+
+```bash
+# Detener servicios (sin borrar datos)
+docker compose down
+
+# Reiniciar solo la app
+docker compose restart app
+
+# Reiniciar PostgreSQL
+docker compose restart postgres
+
+# Ver IP de contenedores
+docker compose exec app hostname -i
+```
+
+### Base de Datos
+
+```bash
+# Conectar a PostgreSQL
+docker compose exec postgres psql -U halia -d halia
 
 # Ejecutar migraciones manualmente
-docker-compose exec app npx prisma migrate deploy
+docker compose exec app npx prisma migrate deploy
 
-# Acceder a la base de datos
-docker-compose exec postgres psql -U halia -d halia
+# Generar Prisma Client
+docker compose exec app npx prisma generate
+
+# Ver esquema de base de datos
+docker compose exec postgres psql -U halia -d halia -c "\dt"
 ```
 
 ---
 
-## 🏗️ Opción 2: Dockerfile Solo (Sin DB)
+## 💾 Backups Automáticos
 
-Si ya tienes PostgreSQL externo (Neon, Supabase, etc.)
+### Script de Backup
 
-### 1. Configurar Next.js para standalone
-
-Abre `next.config.ts` y asegúrate de tener:
-```typescript
-const nextConfig: NextConfig = {
-  output: 'standalone',
-  // ... resto de configuración
-};
-```
-
-### 2. Construir imagen
+Crea `backup.sh`:
 
 ```bash
-docker build -t halia:latest .
+#!/bin/bash
+BACKUP_DIR="/backups/halia"
+DATE=$(date +%Y%m%d_%H%M%S)
+
+mkdir -p $BACKUP_DIR
+
+# Backup de PostgreSQL
+docker compose exec -T postgres pg_dump -U halia halia > "$BACKUP_DIR/db_$DATE.sql"
+
+# Comprimir
+gzip "$BACKUP_DIR/db_$DATE.sql"
+
+# Mantener solo últimos 7 días
+find $BACKUP_DIR -name "db_*.sql.gz" -mtime +7 -delete
+
+echo "Backup completado: db_$DATE.sql.gz"
 ```
 
-### 3. Ejecutar contenedor
+### Automatizar con Cron
 
 ```bash
-docker run -d \
-  --name halia \
-  -p 3000:3000 \
-  -e DATABASE_URL="postgresql://user:pass@host:5432/halia" \
-  -e TRACCAR_URL="https://tu-servidor-traccar.com" \
-  -e TRACCAR_USER="tu_email@example.com" \
-  -e TRACCAR_PASS="tu_contraseña" \
-  -e JWT_SECRET="tu_secret_aleatorio" \
-  halia:latest
+# Editar crontab
+crontab -e
+
+# Agregar backup diario a las 2 AM
+0 2 * * * /path/to/halia/backup.sh
+```
+
+### Restaurar Backup
+
+```bash
+# Descomprimir
+gunzip /backups/halia/db_20260321_020000.sql.gz
+
+# Restaurar
+docker compose exec -T postgres psql -U halia halia < /backups/halia/db_20260321_020000.sql
 ```
 
 ---
 
-## 🌐 Desplegar en Producción
+## 🔒 Seguridad en Producción
 
-### Docker Hub
-
-1. **Login en Docker Hub**
-   ```bash
-   docker login
-   ```
-
-2. **Tag de la imagen**
-   ```bash
-   docker tag halia:latest TU_USUARIO/halia:latest
-   docker tag halia:latest TU_USUARIO/halia:v1.0.0
-   ```
-
-3. **Push a Docker Hub**
-   ```bash
-   docker push TU_USUARIO/halia:latest
-   docker push TU_USUARIO/halia:v1.0.0
-   ```
-
-### Digital Ocean, AWS, Railway, etc.
-
-Usa `docker-compose.yml` o la imagen de Docker Hub:
+### 1. Firewall
 
 ```bash
-docker pull TU_USUARIO/halia:latest
-docker run -d -p 3000:3000 --env-file .env TU_USUARIO/halia:latest
+# Permitir solo SSH, HTTP, HTTPS
+sudo ufw allow 22/tcp
+sudo ufw allow 80/tcp
+sudo ufw allow 443/tcp
+sudo ufw enable
+```
+
+### 2. No Exponer PostgreSQL
+
+El `docker-compose.yml` ya NO expone el puerto 5432 externamente. Solo la app interna puede acceder.
+
+### 3. Cambiar Credenciales por Defecto
+
+- ✅ Cambia `POSTGRES_PASSWORD` por una contraseña fuerte
+- ✅ Genera un `JWT_SECRET` aleatorio único
+- ✅ No uses credenciales de prueba en producción
+
+### 4. Actualizar Regularmente
+
+```bash
+# Actualizar imágenes de Docker
+docker compose pull
+docker compose up -d
+
+# Actualizar sistema operativo
+sudo apt update && sudo apt upgrade -y
 ```
 
 ---
 
-## 📦 Variables de Entorno
+## 🔧 Troubleshooting en Producción
 
-Crea un archivo `.env.docker` para sobrescribir valores en producción:
+### App no inicia
 
-```env
-# Database
-DATABASE_URL=postgresql://user:pass@host:5432/halia
+```bash
+# Ver logs completos
+docker compose logs app
 
-# Traccar
-TRACCAR_URL=https://your-traccar-server.com
-TRACCAR_USER=email@example.com
-TRACCAR_PASS=password
+# Verificar variables de entorno
+docker compose config
 
-# JWT
-JWT_SECRET=your_random_secret_here
-JWT_EXPIRES_IN=8h
-
-# App
-NEXT_PUBLIC_APP_URL=https://your-domain.com
-NODE_ENV=production
+# Reconstruir sin caché
+docker compose build --no-cache
+docker compose up -d
 ```
 
-Luego ejecuta:
+### Error de conexión a base de datos
+
 ```bash
-docker-compose --env-file .env.docker up -d
+# Verificar que PostgreSQL esté corriendo
+docker compose ps postgres
+
+# Ver logs de PostgreSQL
+docker compose logs postgres
+
+# Probar conexión manual
+docker compose exec postgres psql -U halia -d halia
+```
+
+### Prisma no encuentra la base de datos
+
+```bash
+# Ejecutar migraciones manualmente
+docker compose exec app npx prisma migrate deploy
+
+# Regenerar Prisma Client
+docker compose exec app npx prisma generate
+
+# Reiniciar app
+docker compose restart app
+```
+
+### SSL no funciona
+
+```bash
+# Verificar certificados
+sudo certbot certificates
+
+# Renovar manualmente
+sudo certbot renew
+
+# Ver logs de Nginx
+sudo tail -f /var/log/nginx/error.log
 ```
 
 ---
 
-## 🔧 Troubleshooting
+## 📈 Escalamiento
 
-### Error: "Could not connect to database"
+### Separar Base de Datos
 
-1. Verifica que PostgreSQL esté corriendo:
-   ```bash
-   docker-compose ps
-   ```
+Si necesitas escalar, usa PostgreSQL externo:
 
-2. Verifica logs de PostgreSQL:
-   ```bash
-   docker-compose logs postgres
-   ```
-
-3. Prueba conexión manual:
-   ```bash
-   docker-compose exec postgres psql -U halia -d halia
-   ```
-
-### Error: "Prisma Client not generated"
-
-```bash
-docker-compose exec app npx prisma generate
-docker-compose restart app
-```
-
-### Error: "Port 3000 already in use"
-
-Cambia el puerto en `docker-compose.yml`:
 ```yaml
-ports:
-  - "8080:3000"  # Usa puerto 8080 en tu host
+# En docker-compose.yml
+app:
+  environment:
+    DATABASE_URL: postgresql://user:pass@external-db.com:5432/halia
 ```
 
-### Reconstruir después de cambios
+Luego elimina el servicio `postgres` del compose.
+
+### Múltiples Instancias
+
+Para balanceo de carga:
 
 ```bash
-docker-compose down
-docker-compose build --no-cache
-docker-compose up -d
+# Escalar a 3 instancias
+docker compose up -d --scale app=3
+
+# Configurar Nginx para load balancing
+upstream halia_backend {
+    server localhost:3001;
+    server localhost:3002;
+    server localhost:3003;
+}
 ```
 
 ---
 
-## 📊 Monitoreo
+## 📝 Checklist Pre-Producción
 
-### Ver uso de recursos
+- [ ] `.env.production` configurado con credenciales seguras
+- [ ] `JWT_SECRET` aleatorio generado
+- [ ] Dominio apuntando al servidor
+- [ ] Firewall configurado (UFW)
+- [ ] Nginx instalado y configurado
+- [ ] SSL/HTTPS activo (Let's Encrypt)
+- [ ] Backups automáticos configurados
+- [ ] Logs siendo monitoreados
+- [ ] Docker y Docker Compose actualizados
+- [ ] Pruebas de conexión exitosas
+
+---
+
+## 🎯 Comandos Rápidos
 
 ```bash
-docker stats
-```
+# Deploy completo
+git pull && docker compose --env-file .env.production build && docker compose --env-file .env.production up -d
 
-### Ver logs en tiempo real
+# Ver logs en vivo
+docker compose logs -f app
 
-```bash
-# Todos los servicios
-docker-compose logs -f
+# Reinicio rápido
+docker compose restart app
 
-# Solo la app
-docker-compose logs -f app
+# Backup manual
+docker compose exec -T postgres pg_dump -U halia halia > backup_$(date +%Y%m%d).sql
 
-# Últimas 100 líneas
-docker-compose logs --tail=100 app
-```
+# Detener todo
+docker compose down
 
----
-
-## 🔄 Backups de Base de Datos
-
-### Crear backup
-
-```bash
-docker-compose exec postgres pg_dump -U halia halia > backup_$(date +%Y%m%d).sql
-```
-
-### Restaurar backup
-
-```bash
-docker-compose exec -T postgres psql -U halia halia < backup_20260321.sql
+# Limpiar todo (¡CUIDADO! Borra datos)
+docker compose down -v
 ```
 
 ---
 
-## 🚀 Multi-Stage Build Optimizado
+## 📞 Soporte
 
-El Dockerfile usa multi-stage build para:
-- ✅ Reducir tamaño de imagen final (de ~1GB a ~200MB)
-- ✅ Separar dependencias de desarrollo y producción
-- ✅ Mejorar seguridad (ejecuta como non-root user)
-- ✅ Cachear dependencias para builds más rápidos
+Si encuentras problemas:
 
----
-
-## 📝 Estructura de Archivos Docker
-
-```
-HALIA/
-├── Dockerfile              # Imagen de la aplicación
-├── docker-compose.yml      # Orquestación de servicios
-├── .dockerignore          # Archivos a excluir del build
-└── DOCKER.md              # Esta guía
-```
-
----
-
-## 🎯 Próximos Pasos
-
-1. Ejecuta `docker-compose up -d`
-2. Espera 30 segundos para que migre la DB
-3. Abre http://localhost:3000
-4. Login con tus credenciales de Traccar
-5. ¡Disfruta HALIA! 🎉
-
----
-
-**¿Necesitas ayuda?** Revisa los logs con `docker-compose logs -f`
+1. Revisa logs: `docker compose logs -f`
+2. Verifica variables: `docker compose config`
+3. Revisa documentación de Traccar
+4. Contacta al equipo de desarrollo
