@@ -1,0 +1,57 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Driver {
+  id        String     @id @default(cuid())
+  name      String
+  email     String?
+  phone     String?
+  license   String?
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  fuelLogs  FuelLog[]
+
+  @@map("drivers")
+}
+
+model FuelLog {
+  id            String   @id @default(cuid())
+  deviceId      String
+  driverId      String?
+  driver        Driver?  @relation(fields: [driverId], references: [id])
+  liters        Float
+  pricePerLiter Float
+  totalCost     Float
+  odometer      Float
+  station       String?
+  fuelType      String   @default("regular")
+  invoiceNumber String?
+  date          DateTime
+  notes         String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([deviceId])
+  @@index([driverId])
+  @@index([date])
+  @@map("fuel_logs")
+}
+
+model MonthlyBudget {
+  id           String   @id @default(cuid())
+  month        String   @unique
+  budgetAmount Float
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@map("monthly_budgets")
+}
