@@ -1,6 +1,35 @@
-# 🚀 Despliegue Rápido en Producción
+# 🚀 Despliegue en Producción
 
-## Comandos para ejecutar en tu servidor
+## 🎯 Método Principal: Easypanel (Recomendado)
+
+HALIA está diseñado para desplegarse en **Easypanel**.
+
+### Guía Completa de Easypanel
+
+👉 **Ver [EASYPANEL.md](EASYPANEL.md)** para instrucciones paso a paso
+
+### Resumen Rápido
+
+1. **Crear PostgreSQL service** en Easypanel
+2. **Crear App** conectada a GitHub: `BRYAN-RODRIGUEZ-243/halia`
+3. **Configurar variables de entorno:**
+   ```env
+   DATABASE_URL=postgresql://halia:pass@halia-db:5432/halia
+   TRACCAR_URL=https://prueba-traccar.b4blvy.easypanel.host
+   TRACCAR_USER=bjrodriguez530@gmail.com
+   TRACCAR_PASS=admin
+   JWT_SECRET=[genera uno aleatorio]
+   ```
+4. **Deploy automático** - Easypanel construye con Dockerfile
+5. **Abrir app** en tu dominio Easypanel
+
+---
+
+## 🐳 Método Alternativo: Docker en VPS
+
+Si prefieres usar un servidor propio (VPS, EC2, etc.):
+
+### Comandos para ejecutar en tu servidor
 
 ### 1. Clonar repositorio
 ```bash

@@ -119,7 +119,35 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 
 ## Deployment
 
-### Vercel (Recommended)
+### Easypanel (Recommended) ⭐
+
+HALIA is designed to deploy on **Easypanel** with Docker.
+
+**Quick Start:**
+
+1. Create PostgreSQL service in Easypanel
+2. Create App connected to GitHub: `BRYAN-RODRIGUEZ-243/halia`
+3. Configure environment variables (see below)
+4. Easypanel builds with Dockerfile automatically
+5. Access your app at your Easypanel domain
+
+📖 **Full Guide:** See [EASYPANEL.md](EASYPANEL.md) for step-by-step instructions
+
+### Docker (VPS/Cloud)
+
+Deploy on any server with Docker:
+
+```bash
+git clone https://github.com/BRYAN-RODRIGUEZ-243/halia.git
+cd halia
+cp .env.production.example .env.production
+# Edit .env.production with your credentials
+docker compose --env-file .env.production up -d
+```
+
+📖 **Full Guide:** See [DOCKER.md](DOCKER.md) for production setup
+
+### Vercel (Frontend Only)
 
 1. Push your code to GitHub
 2. Import project in [Vercel](https://vercel.com)
@@ -138,14 +166,6 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 3. Deploy from GitHub repository
 4. Add environment variables
 5. Run `npx prisma migrate deploy` in Railway terminal
-
-### Other Platforms
-
-Compatible with any Node.js hosting that supports:
-- Next.js 16+ (App Router)
-- Server-Side Rendering (SSR)
-- API Routes
-- PostgreSQL connection
 
 ## Environment Variables
 

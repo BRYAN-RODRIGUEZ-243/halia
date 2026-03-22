@@ -2,9 +2,56 @@
 
 ## Opciones de Despliegue
 
-### 1. Vercel (Recomendado) ⭐
+### 1. Easypanel (Recomendado para Producción) ⭐
 
-Vercel es la plataforma oficial de Next.js y la más sencilla para desplegar.
+Easypanel ofrece hosting Docker con PostgreSQL incluido y es la opción más completa.
+
+**Ventajas:**
+- ✅ PostgreSQL incluido
+- ✅ Docker nativo (usa nuestro Dockerfile)
+- ✅ Auto-deploy desde GitHub
+- ✅ SSL/HTTPS automático
+- ✅ Consola y logs integrados
+- ✅ Monitoreo y métricas
+- ✅ Backups automatizados
+
+**Guía Completa:** 👉 [EASYPANEL.md](EASYPANEL.md)
+
+**Resumen:**
+1. Crear PostgreSQL service
+2. Crear App desde GitHub: `BRYAN-RODRIGUEZ-243/halia`
+3. Configurar variables de entorno
+4. Deploy automático con Dockerfile
+5. ¡Listo!
+
+---
+
+### 2. Docker en VPS/Cloud 🐳
+
+Para despliegues en servidores propios (DigitalOcean, AWS, Linode, etc.)
+
+**Ventajas:**
+- ✅ Control total del servidor
+- ✅ Docker Compose incluido
+- ✅ PostgreSQL local
+- ✅ Fácil escalamiento
+
+**Guía Completa:** 👉 [DOCKER.md](DOCKER.md)
+
+**Comandos rápidos:**
+```bash
+git clone https://github.com/BRYAN-RODRIGUEZ-243/halia.git
+cd halia
+cp .env.production.example .env.production
+# Editar .env.production
+docker compose --env-file .env.production up -d
+```
+
+---
+
+### 3. Vercel (Solo Frontend) 🌐
+
+Vercel es la plataforma oficial de Next.js, ideal para frontend pero requiere DB externa.
 
 **Pasos:**
 
@@ -55,7 +102,7 @@ Vercel es la plataforma oficial de Next.js y la más sencilla para desplegar.
 
 ---
 
-### 2. Railway 🚂
+### 4. Railway 🚂
 
 Railway ofrece base de datos PostgreSQL incluida.
 
@@ -100,7 +147,7 @@ Railway ofrece base de datos PostgreSQL incluida.
 
 ---
 
-### 3. Render 🎨
+### 5. Render 🎨
 
 Alternativa gratuita con PostgreSQL incluido.
 
@@ -147,7 +194,7 @@ Alternativa gratuita con PostgreSQL incluido.
 
 ---
 
-### 4. Supabase (Solo Base de Datos)
+### 6. Supabase (Solo Base de Datos)
 
 Si ya tienes hosting para Next.js pero necesitas solo la base de datos:
 
