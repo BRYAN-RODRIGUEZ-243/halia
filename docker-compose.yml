@@ -1,0 +1,72 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:16-alpine
+    container_name: halia-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: halia
+      POSTGRES_PASSWORD: halia_password_2024
+      POSTGRES_DB: halia
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    networks:
+      - halia-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U halia"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Next.js Application
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: halia-app
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      # Database
+      DATABASE_URL: postgresql://halia:halia_password_2024@postgres:5432/halia
+      
+      # Traccar API (cambiar por tus credenciales)
+      TRACCAR_URL: https://prueba-traccar.b4blvy.easypanel.host
+      TRACCAR_USER: bjrodriguez530@gmail.com
+      TRACCAR_PASS: admin
+      
+      # JWT Secret (cambiar en producción)
+      JWT_SECRET: halia_jwt_secret_key_2024_change_in_production
+      JWT_EXPIRES_IN: 8h
+      
+      # App URL
+      NEXT_PUBLIC_APP_URL: http://localhost:3000
+      
+      # Node environment
+      NODE_ENV: production
+    ports:
+      - "3000:3000"
+    networks:
+      - halia-network
+    volumes:
+      - ./prisma:/app/prisma
+    command: >
+      sh -c "
+        npx prisma migrate deploy &&
+        npx prisma generate &&
+        node server.js
+      "
+
+volumes:
+  postgres_data:
+    driver: local
+
+networks:
+  halia-network:
+    driver: bridge
