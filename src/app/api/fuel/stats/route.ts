@@ -7,7 +7,7 @@ import {
   calcBudgetProgress,
   groupByMonth,
 } from '@/lib/fuelCalculations';
-import type { FuelStats, VehicleEfficiency, MonthlyFuelData, BudgetProgress } from '@/types/fuel';
+import type { FuelStats, VehicleEfficiency, MonthlyFuelData, BudgetProgress, FuelLog } from '@/types/fuel';
 
 const TRACCAR_URL = process.env.TRACCAR_URL || '';
 const TRACCAR_USER = process.env.TRACCAR_USER || '';
@@ -81,13 +81,13 @@ export async function GET(request: NextRequest) {
     }, {});
 
     // Calcular estadísticas generales
-    const stats: FuelStats = calcMonthlyStats(logs);
+    const stats: FuelStats = calcMonthlyStats(logs as FuelLog[]);
 
     // Calcular eficiencia por vehículo
-    const efficiencyData: VehicleEfficiency[] = calcEfficiency(logs, deviceMap);
+    const efficiencyData: VehicleEfficiency[] = calcEfficiency(logs as FuelLog[], deviceMap);
 
     // Agrupar datos por mes (últimos 12 meses)
-    const monthlyData: MonthlyFuelData[] = groupByMonth(logs);
+    const monthlyData: MonthlyFuelData[] = groupByMonth(logs as FuelLog[]);
 
     // Obtener presupuesto del mes actual
     const now = new Date();
@@ -113,7 +113,7 @@ export async function GET(request: NextRequest) {
         },
       });
 
-      const currentMonthStats = calcMonthlyStats(currentMonthLogs);
+      const currentMonthStats = calcMonthlyStats(currentMonthLogs as FuelLog[]);
 
       budgetProgress = calcBudgetProgress(currentMonthStats.totalCost, budget.budgetAmount);
     }

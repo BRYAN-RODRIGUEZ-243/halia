@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getSession } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { calcMonthlyStats } from '@/lib/fuelCalculations';
-import type { CreateFuelLogDTO, FuelLogWithRelations } from '@/types/fuel';
+import type { CreateFuelLogDTO, FuelLogWithRelations, FuelLog } from '@/types/fuel';
 
 const TRACCAR_URL = process.env.TRACCAR_URL || '';
 const TRACCAR_USER = process.env.TRACCAR_USER || '';
@@ -109,8 +109,8 @@ export async function GET(request: NextRequest) {
       driverName: log.driver ? log.driver.name : null,
     }));
 
-    // Calcular estadísticas del período
-    const stats = calcMonthlyStats(logs);
+    // Calcular estadísticas del período (cast logs para coincidir con tipo FuelLog)
+    const stats = calcMonthlyStats(logs as FuelLog[]);
 
     return NextResponse.json({
       logs: logsWithRelations,
