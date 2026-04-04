@@ -2,8 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
 
 // Public routes that don't require authentication
-const publicRoutes = ["/", "/signin", "/signup"];
-const authApiRoutes = ["/api/auth/login", "/api/auth/logout"];
+const publicRoutes = ["/signin", "/signup"];
+const authApiRoutes = ["/api/auth/login", "/api/auth/logout", "/api/auth/me"];
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -16,24 +16,27 @@ export async function middleware(request: NextRequest) {
   // Check if user has valid session
   const session = await getSession(request);
 
-  // If user is authenticated and trying to access signin, redirect to dashboard
-  if (session && pathname === "/signin") {
-    return NextResponse.redirect(new URL("/", request.url));
-  }
+  const isPublicRoute = publicRoutes.includes(pathname);
 
-  // Allow public routes
-  if (publicRoutes.includes(pathname)) {
+  // If user is authenticated:
+  if (session) {
+    // And tries to access a public route (signin/signup), redirect to dashboard
+    if (isPublicRoute) {
+      return NextResponse.redirect(new URL("/", request.url));
+    }
+    // Otherwise, allow access to protected route
     return NextResponse.next();
   }
 
-  // If user is not authenticated and trying to access protected route, redirect to signin
-  if (!session) {
+  // If user is not authenticated:
+  // And tries to access a protected route, redirect to signin
+  if (!isPublicRoute) {
     const signInUrl = new URL("/signin", request.url);
     signInUrl.searchParams.set("callbackUrl", pathname);
     return NextResponse.redirect(signInUrl);
   }
 
-  // User is authenticated, allow access
+  // Allow access to public routes for unauthenticated users
   return NextResponse.next();
 }
 
