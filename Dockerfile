@@ -52,10 +52,10 @@ COPY --from=builder --chown=nextjs:nodejs /app/prisma ./prisma
 USER nextjs
 
 # Expose port
-EXPOSE 3000
+EXPOSE 8002
 
 # Set port environment variable
-ENV PORT=3000
+ENV PORT=8002
 ENV HOSTNAME="0.0.0.0"
 
 # Start the application
