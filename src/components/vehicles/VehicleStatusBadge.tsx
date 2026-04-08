@@ -13,10 +13,8 @@ export default function VehicleStatusBadge({
 }: VehicleStatusBadgeProps) {
   // Determine vehicle status
   const getStatus = () => {
-    // Check if offline based on status or last update time
-    const isOffline = status === "offline" || isStale(lastUpdate);
-
-    if (isOffline) {
+    // Confiar completamente en el status que reporta Traccar
+    if (status === "offline" || status === "unknown" || !status) {
       return {
         label: "Offline",
         color: "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-400",
@@ -24,30 +22,20 @@ export default function VehicleStatusBadge({
       };
     }
 
-    // Online status - check movement
     if (speed > 0) {
       return {
         label: "En movimiento",
         color: "bg-success-50 text-success-700 dark:bg-success-900/20 dark:text-success-400",
-        dot: "bg-success-500",
+        dot: "bg-success-500 animate-pulse",
       };
     }
 
-    // Online but stopped
+    // Conectado pero detenido
     return {
       label: "Detenido",
-      color: "bg-warning-50 text-warning-700 dark:bg-warning-900/20 dark:text-warning-400",
-      dot: "bg-warning-500",
+      color: "bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400",
+      dot: "bg-blue-500",
     };
-  };
-
-  // Check if last update is older than 10 minutes
-  const isStale = (lastUpdate?: string) => {
-    if (!lastUpdate) return true;
-    const lastUpdateTime = new Date(lastUpdate).getTime();
-    const now = Date.now();
-    const tenMinutes = 10 * 60 * 1000;
-    return now - lastUpdateTime > tenMinutes;
   };
 
   const statusInfo = getStatus();

@@ -117,7 +117,7 @@ export default function DriversTable() {
 
             <div className="flex items-center gap-3">
               <Button size="sm" onClick={handleCreate}>
-                + Nuevo Conductor
+                + Agregar Conductor
               </Button>
             </div>
           </div>
@@ -154,12 +154,12 @@ export default function DriversTable() {
               <h3 className="mt-4 text-sm font-medium text-gray-900 dark:text-gray-100">
                 {searchTerm
                   ? "No se encontraron conductores"
-                  : "No hay conductores registrados"}
+                  : "Aún no hay conductores"}
               </h3>
               <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
                 {searchTerm
-                  ? "Intenta cambiar los filtros de búsqueda"
-                  : "Comienza agregando tu primer conductor"}
+                  ? "Prueba con otros términos de búsqueda."
+                  : "Crea tu primer conductor para empezar a gestionar."}
               </p>
               {!searchTerm && (
                 <div className="mt-6">

@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useVehicles, useDeleteVehicle, Vehicle } from "@/hooks/useVehicles";
 import VehicleStatusBadge from "./VehicleStatusBadge";
 import VehicleFormModal from "./VehicleFormModal";
+import AssignDriverModal from "./AssignDriverModal";
 import { useModal } from "@/hooks/useModal";
 import Button from "../ui/button/Button";
 
@@ -18,6 +19,8 @@ export default function VehiclesTable() {
   const [modalMode, setModalMode] = useState<"create" | "edit">("create");
 
   const { isOpen, openModal, closeModal } = useModal();
+  const { isOpen: isAssignOpen, openModal: openAssignModal, closeModal: closeAssignModal } = useModal();
+  const [assigningVehicle, setAssigningVehicle] = useState<Vehicle | null>(null);
 
   // Filter vehicles
   const filteredVehicles = useMemo(() => {
@@ -36,11 +39,7 @@ export default function VehiclesTable() {
       if (statusFilter === "all") return true;
 
       const speed = vehicle.position?.speed || 0;
-      const lastUpdate = vehicle.lastUpdate;
-      const isStale = lastUpdate
-        ? Date.now() - new Date(lastUpdate).getTime() > 10 * 60 * 1000
-        : true;
-      const isOffline = vehicle.status === "offline" || isStale;
+      const isOffline = vehicle.status === "offline" || vehicle.status === "unknown" || !vehicle.status;
 
       if (statusFilter === "offline") return isOffline;
       if (statusFilter === "moving") return !isOffline && speed > 0;
@@ -82,7 +81,13 @@ export default function VehiclesTable() {
 
   const handleViewOnMap = (e: React.MouseEvent, deviceId: number) => {
     e.stopPropagation();
-    router.push(`/map?deviceId=${deviceId}`);
+    router.push(`/?deviceId=${deviceId}`);
+  };
+
+  const handleAssignDriver = (e: React.MouseEvent, vehicle: Vehicle) => {
+    e.stopPropagation();
+    setAssigningVehicle(vehicle);
+    openAssignModal();
   };
 
   if (error) {
@@ -299,6 +304,25 @@ export default function VehiclesTable() {
                     <td className="px-4 py-4">
                       <div className="flex items-center justify-end gap-2">
                         <button
+                          onClick={(e) => handleAssignDriver(e, vehicle)}
+                          className="rounded-lg p-2 text-gray-500 hover:bg-gray-100 hover:text-brand-600 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-brand-400"
+                          title={vehicle.attributes?.driverId ? "Reasignar conductor" : "Asignar conductor"}
+                        >
+                          <svg
+                            className="h-4 w-4"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                            />
+                          </svg>
+                        </button>
+                        <button
                           onClick={(e) => handleViewOnMap(e, vehicle.id)}
                           className="rounded-lg p-2 text-gray-500 hover:bg-gray-100 hover:text-brand-600 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-brand-400"
                           title="Ver en mapa"
@@ -382,6 +406,11 @@ export default function VehiclesTable() {
         onClose={closeModal}
         vehicle={editingVehicle}
         mode={modalMode}
+      />
+      <AssignDriverModal
+        isOpen={isAssignOpen}
+        onClose={closeAssignModal}
+        vehicle={assigningVehicle}
       />
     </>
   );
